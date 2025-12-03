@@ -2,12 +2,12 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-print("Air Draw start ho raha hai ✅")
+print("AirDraw is starting... ✅")
 
-# Camera open
+# Open camera
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 if not cap.isOpened():
-    print("❌ Camera open nahi hua.")
+    print(" Error: Camera could not be opened.")
     exit()
 
 mp_hands = mp.solutions.hands
@@ -25,7 +25,7 @@ prev_point = None  # last fingertip point
 while True:
     ret, frame = cap.read()
     if not ret:
-        print("Frame nahi mil raha, exit.")
+        print(" Error: Frame not received. Exiting.")
         break
 
     frame = cv2.flip(frame, 1)
@@ -55,20 +55,21 @@ while True:
                 drawing = True
             else:
                 drawing = False
-                prev_point = None  # line break
+                prev_point = None  # stop line
 
-            # Fingertip ko screen pe highlight karo
+            # Highlight fingertip
             cv2.circle(frame, (x_index, y_index), 10, (0, 255, 0), -1)
 
             if drawing:
                 if prev_point is not None:
-                    # Canvas pe line draw
-                    cv2.line(canvas, prev_point, (x_index, y_index), (255, 255, 255), 6)
+                    # Draw line on canvas
+                    cv2.line(canvas, prev_point, (x_index, y_index),
+                             (255, 255, 255), 6)
                 prev_point = (x_index, y_index)
 
             mp_draw.draw_landmarks(frame, handLms, mp_hands.HAND_CONNECTIONS)
 
-    # Canvas + live camera merge
+    # Merge canvas with live frame
     gray = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
     _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
     mask_inv = cv2.bitwise_not(mask)
@@ -78,21 +79,22 @@ while True:
 
     out = cv2.add(frame_bg, canvas_fg)
 
-    cv2.putText(out, "Pinch (thumb+index) to draw | C=clear | Q=quit",
-                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    cv2.putText(out, "Pinch to draw | C = clear | Q = quit",
+                (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                0.6, (255, 255, 255), 2)
 
-    cv2.imshow("Air Draw", out)
+    cv2.imshow("AirDraw", out)
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'):
-        print("Q dabaya, exit.")
+        print("Q pressed. Exiting.")
         break
     elif key == ord('c'):
         canvas = np.zeros_like(frame)
         prev_point = None
-        print("Canvas clear.")
+        print("Canvas cleared.")
 
 cap.release()
 hands.close()
 cv2.destroyAllWindows()
-print("Program khatam ✅")
+print("Program ended. ✅")
