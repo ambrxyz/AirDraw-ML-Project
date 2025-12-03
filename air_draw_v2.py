@@ -4,12 +4,12 @@ import numpy as np
 import time
 import random
 
-print("Air Draw v2 start ho raha hai ✅")
+print("AirDraw v2 is starting... ✅")
 
-# Camera open
+# Open camera
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 if not cap.isOpened():
-    print("❌ Camera open nahi hua.")
+    print(" Error: Could not open camera.")
     exit()
 
 mp_hands = mp.solutions.hands
@@ -27,7 +27,7 @@ prev_point = None  # last fingertip point
 particles = []  # particle list: each = [x, y, vx, vy, life]
 
 def spawn_particles(x, y, count=8):
-    """Finger ke around chhote glowing particles banayenge."""
+    """Create glowing particles around the fingertip."""
     for _ in range(count):
         angle = random.uniform(0, 2 * np.pi)
         speed = random.uniform(1, 3)
@@ -39,7 +39,7 @@ def spawn_particles(x, y, count=8):
 while True:
     ret, frame = cap.read()
     if not ret:
-        print("Frame nahi mil raha, exit.")
+        print(" Error: Frame not received. Exiting.")
         break
 
     frame = cv2.flip(frame, 1)
@@ -76,18 +76,18 @@ while True:
                 prev_point = None  # line break
 
             if drawing:
-                # Canvas pe line draw
+                # Draw on canvas
                 if prev_point is not None:
                     cv2.line(canvas, prev_point, (x_index, y_index),
                              (255, 255, 255), 6)
                 prev_point = (x_index, y_index)
 
-                # Spawn particles near fingertip
+                # Create particle effects
                 spawn_particles(x_index, y_index, count=6)
 
             mp_draw.draw_landmarks(frame, handLms, mp_hands.HAND_CONNECTIONS)
 
-    # Canvas + live camera merge
+    # Merge canvas with live camera feed
     gray = cv2.cvtColor(canvas, cv2.COLOR_BGR2GRAY)
     _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
     mask_inv = cv2.bitwise_not(mask)
@@ -97,7 +97,7 @@ while True:
 
     out = cv2.add(frame_bg, canvas_fg)
 
-    # LASER EFFECT on fingertip (if detected)
+    # LASER EFFECT on fingertip
     if fingertip is not None:
         x_f, y_f = fingertip
         # inner bright core
@@ -116,10 +116,9 @@ while True:
 
         if life > 0:
             new_particles.append([x, y, vx, vy, life])
-            # alpha based on life
             alpha = int(80 + 175 * (life / 30.0))
             alpha = max(50, min(255, alpha))
-            color = (0, alpha, 255)  # pinkish-orange glow
+            color = (0, alpha, 255)  # glowing orange-pink
             cv2.circle(out, (int(x), int(y)), 4, color, -1)
 
     particles = new_particles
@@ -128,24 +127,23 @@ while True:
                 (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                 (255, 255, 255), 2)
 
-    cv2.imshow("Air Draw v2", out)
+    cv2.imshow("AirDraw v2", out)
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'):
-        print("Q dabaya, exit.")
+        print("Q pressed. Exiting program.")
         break
     elif key == ord('c'):
         canvas = np.zeros_like(frame)
         particles = []
         prev_point = None
-        print("Canvas clear.")
+        print("Canvas cleared.")
     elif key == ord('s'):
-        # Save only drawing canvas (no camera), transparent-style black bg
         filename = f"drawing_{int(time.time())}.png"
         cv2.imwrite(filename, canvas)
-        print(f"Saved: {filename}")
+        print(f"Image saved as: {filename}")
 
 cap.release()
 hands.close()
 cv2.destroyAllWindows()
-print("Program khatam ✅")
+print("Program finished. ")
